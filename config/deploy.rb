@@ -4,7 +4,7 @@ set :rvm_type,        :user
 set :rvm_ruby_string, "ruby-2.1.6"
 set :application, "dialedin"
 set :user, "001086"
-set :deploy_to, "/var/www/"
+set :deploy_to, "/var/www/#{application}"
 set :repository,  "git@github.com:chandru-1987/capdeploy.git"
 set :scm, :git
 set :branch, "master"
