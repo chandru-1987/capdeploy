@@ -15,17 +15,43 @@ set :ssh_options, { :forward_agent => true }
 set :keep_releases, 5
 server "172.20.24.23", :app, :web, :db, :primary => true
 default_run_options[:pty] = true
-# Or: `accurev`, `bzr`, `cvs`, `darcs`, `git`, `mercurial`, `perforce`, `subversion` or `none`
 
+namespace :deploy do
 
-# If you are using Passenger mod_rails uncomment this:
-# if you're still using the script/reapear helper you will need
-# these http://github.com/rails/irs_process_scripts
+ desc "Start Passenger app"
+ task :start do
+    run "rails s"
+ end 
 
-# namespace :deploy do
-#   task :start do ; end
-#   task :stop do ; end
-#   task :restart, :roles => :app, :except => { :no_release => true } do
-#     run "#{try_sudo} touch #{File.join(current_path,'tmp','restart.txt')}"
-#   end
-# end
+ desc "Restart Passenger app"
+ task :restart  do
+   #run "#{try_sudo} touch #{File.join(current_path,'tmp','restart.txt')}"
+   run  "rails s"
+ end
+
+ desc "Symlink shared config files"
+ task :symlink_config_files do
+   run "#{ try_sudo } ln -s #{ deploy_to }/shared/config/database.yml #{ current_path }/config/database.yml"
+ end
+
+ task :setup_config do
+   run "mkdir -p #{shared_path}/config"
+   put File.read("config/database.example.yml"), "#{shared_path}/config/database.yml"
+   puts "Now edit the config files in #{shared_path}."
+ end
+
+ task :precompile_assets do
+   run "cd #{latest_release}; bundle exec rake assets:precompile"
+ end
+
+ task :migrate do
+   run "cd #{latest_release}; bundle exec rake db:create; bundle exec rake db:migrate"
+ end
+
+end
+
+after "deploy:setup", "deploy:setup_config"
+after "deploy", "deploy:cleanup"
+after "deploy:migrations" , "deploy:cleanup"
+after "deploy:update_code", "deploy:symlink_config_files"
+after "deploy:update_code", "deploy:precompile_assets"
